@@ -215,14 +215,22 @@ function getPromille() {
   const w = parseFloat(document.getElementById('weight').value) || 80;
   const r = parseFloat(document.getElementById('gender').value) || 0.7;
   const now = Date.now();
-  let totalG = 0;
-  log.forEach(entry => {
-    if (entry.alc_g <= 0) return;
-    const hoursAgo = (now - entry.time) / 3600000;
-    const g = Math.max(0, entry.alc_g - 0.15 * hoursAgo * w * r);
-    totalG += g;
-  });
-  return Math.max(0, totalG / (w * r));
+
+  // Schritt 1: Gesamte Gramm Alkohol aufaddieren
+  const totalG = log.reduce((s, e) => s + e.alc_g, 0);
+  if (totalG === 0) return 0;
+
+  // Schritt 2: Gesamt-BAK nach Widmark: g / (kg * r)
+  let bac = totalG / (w * r);
+
+  // Schritt 3: Abbau auf den Gesamt-BAK anwenden
+  // Abbau beginnt 30 Min nach dem ersten Getränk (Resorptionszeit)
+  const firstDrinkTime = Math.min(...log.map(e => e.time));
+  const hoursElapsed = (now - firstDrinkTime) / 3600000;
+  const abbauStunden = Math.max(0, hoursElapsed - 0.5);
+  bac = bac - (0.15 * abbauStunden);
+
+  return Math.max(0, bac);
 }
 
 function getStatus(bac) {
