@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍺 Vatertag Kölsch-Tracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f4f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+    .app { max-width: 420px; margin: 0 auto; padding: 12px; }
+    .header { text-align: center; padding: 20px 0 8px; }
+    .header h1 { font-size: 24px; font-weight: 600; color: #1a1a1a; }
+    .header p { font-size: 13px; color: #666; margin-top: 4px; }
+    .koelsch-badge { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 8px; background: #E6F1FB; color: #185FA5; margin-top: 6px; }
+    .promille-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 14px; padding: 1.25rem; margin: 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .promille-display { text-align: center; padding: 12px 0; }
+    .promille-val { font-size: 52px; font-weight: 600; line-height: 1; transition: color 0.4s; color: #3B6D11; }
+    .promille-unit { font-size: 14px; color: #888; margin-top: 4px; }
+    .promille-status { font-size: 13px; font-weight: 600; margin-top: 10px; padding: 5px 18px; border-radius: 8px; display: inline-block; }
+    .setup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .setup-item label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+    .setup-item select, .setup-item input[type=number] {
+      width: 100%; padding: 8px 10px; font-size: 14px;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #f9f9f9; color: #1a1a1a;
+    }
+    .section-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin: 18px 0 8px; }
+    .drinks-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .drink-btn {
+      background: #fff; border: 1px solid #e5e5e5; border-radius: 12px;
+      padding: 12px; cursor: pointer; text-align: left;
+      transition: background 0.15s, border-color 0.15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .drink-btn:hover { background: #f5f4f0; border-color: #ccc; }
+    .drink-btn:active { transform: scale(0.97); }
+    .drink-btn.non-alc { border-style: dashed; }
+    .drink-icon { font-size: 26px; margin-bottom: 4px; }
+    .drink-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .drink-info { font-size: 11px; color: #888; margin-top: 2px; }
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .stat-card { background: #edecea; border-radius: 10px; padding: 10px; text-align: center; }
+    .stat-val { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+    .stat-lbl { font-size: 11px; color: #888; margin-top: 2px; }
+    .log-section { margin-top: 4px; }
+    .log-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; background: #fff; border: 1px solid #e5e5e5;
+      border-radius: 10px; margin-bottom: 6px;
+    }
+    .log-left { display: flex; align-items: center; gap: 10px; }
+    .log-emoji { font-size: 20px; }
+    .log-name { font-size: 14px; color: #1a1a1a; font-weight: 500; }
+    .log-time { font-size: 12px; color: #888; }
+    .log-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 18px; padding: 4px 6px; border-radius: 8px; }
+    .log-del:hover { color: #E24B4A; background: #FCEBEB; }
+    .empty-log { text-align: center; padding: 28px; color: #aaa; font-size: 14px; }
+    .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .action-btn {
+      padding: 11px; background: none; border: 1px solid #ddd;
+      border-radius: 10px; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      color: #444;
+    }
+    .action-btn:hover { background: #f5f4f0; }
+    .action-btn.mail-btn { border-color: #185FA5; color: #185FA5; background: #E6F1FB; }
+    .action-btn.mail-btn:hover { background: #B5D4F4; }
+    .action-btn.clear-btn:hover { border-color: #E24B4A; color: #E24B4A; background: #FCEBEB; }
+    .time-info { font-size: 12px; color: #888; text-align: center; margin-top: 10px; }
+    .mail-panel {
+      background: #fff; border: 1px solid #185FA5; border-radius: 12px;
+      padding: 1rem 1.25rem; margin-top: 10px; display: none;
+    }
+    .mail-panel.open { display: block; }
+    .mail-panel label { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
+    .mail-panel input[type=email] {
+      width: 100%; padding: 9px 11px; font-size: 14px;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #f9f9f9; color: #1a1a1a; margin-bottom: 10px;
+    }
+    .mail-send-btn {
+      width: 100%; padding: 11px; background: #185FA5; border: none;
+      border-radius: 9px; color: #fff; font-size: 14px;
+      cursor: pointer; font-weight: 600;
+    }
+    .mail-send-btn:hover { background: #0C447C; }
+    .mail-hint { font-size: 11px; color: #aaa; margin-top: 8px; text-align: center; }
+    .footer { text-align: center; padding: 20px 0 10px; font-size: 12px; color: #bbb; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🍺 Vatertag 2026</h1>
+    <p>Kölsch-Tracker für Neuss & Köln</p>
+    <span class="koelsch-badge">Et Kölsche Grundjesetz</span>
+  </div>
+
+  <div class="promille-card">
+    <div class="promille-display">
+      <div class="promille-val" id="promille-val">0.00</div>
+      <div class="promille-unit">‰ Blutalkohol</div>
+      <div class="promille-status" id="promille-status">Nüchtern — Gute Fahrt! 🚗</div>
+    </div>
+    <div class="setup-row">
+      <div class="setup-item">
+        <label>Geschlecht</label>
+        <select id="gender" onchange="recalc()">
+          <option value="0.7">Männlich</option>
+          <option value="0.6">Weiblich</option>
+        </select>
+      </div>
+      <div class="setup-item">
+        <label>Gewicht (kg)</label>
+        <input type="number" id="weight" value="80" min="40" max="200" onchange="recalc()" />
+      </div>
+    </div>
+    <div class="time-info" id="time-info"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-val" id="stat-drinks">0</div>
+      <div class="stat-lbl">Getränke</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-alc">0g</div>
+      <div class="stat-lbl">Alkohol</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="stat-kcal">0</div>
+      <div class="stat-lbl">kcal</div>
+    </div>
+  </div>
+
+  <div class="section-title">Kölsch & Co.</div>
+  <div class="drinks-grid" id="drinks-grid"></div>
+
+  <div class="section-title" style="margin-top:18px;">Verlauf</div>
+  <div class="log-section" id="log-section">
+    <div class="empty-log">Noch nix gedrunke — Prost! 🍻</div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn mail-btn" onclick="toggleMailPanel()">
+      <i class="ti ti-mail"></i> Per Email senden
+    </button>
+    <button class="action-btn clear-btn" onclick="clearAll()">
+      <i class="ti ti-trash"></i> Zurücksetzen
+    </button>
+  </div>
+
+  <div class="mail-panel" id="mail-panel">
+    <label for="mail-addr"><i class="ti ti-at"></i> Empfänger Email-Adresse</label>
+    <input type="email" id="mail-addr" placeholder="deine@email.de" />
+    <button class="mail-send-btn" onclick="sendMail()">
+      <i class="ti ti-send"></i> Email öffnen
+    </button>
+    <p class="mail-hint">Öffnet deine Mail-App mit der Zusammenfassung vorausgefüllt</p>
+  </div>
+
+  <div class="footer">Vatertag 2026 🍺 Köln/Neuss</div>
+</div>
+
+<script>
+const DRINKS = [
+  { name: "Kölsch 0,2L", emoji: "🍺", vol: 200, alc: 4.8, kcal: 86,  nonAlc: false },
+  { name: "Kölsch 0,3L", emoji: "🍺", vol: 300, alc: 4.8, kcal: 129, nonAlc: false },
+  { name: "Kölsch 0,4L", emoji: "🍺", vol: 400, alc: 4.8, kcal: 172, nonAlc: false },
+  { name: "Kölsch 0,5L", emoji: "🍺", vol: 500, alc: 4.8, kcal: 215, nonAlc: false },
+  { name: "Schnaps 2cl",  emoji: "🥃", vol: 20,  alc: 38,  kcal: 48,  nonAlc: false },
+  { name: "Wasser",       emoji: "💧", vol: 300, alc: 0,   kcal: 0,   nonAlc: true  },
+  { name: "Limo",         emoji: "🥤", vol: 300, alc: 0,   kcal: 120, nonAlc: true  },
+  { name: "Cola",         emoji: "🥤", vol: 300, alc: 0,   kcal: 126, nonAlc: true  },
+];
+
+let log = [];
+try { log = JSON.parse(localStorage.getItem('vtLogKoeln') || '[]'); } catch(e) {}
+function save() { try { localStorage.setItem('vtLogKoeln', JSON.stringify(log)); } catch(e) {} }
+
+function buildGrid() {
+  const g = document.getElementById('drinks-grid');
+  g.innerHTML = DRINKS.map((d, i) => {
+    const info = d.nonAlc ? `alkoholfrei · ${d.kcal} kcal` : `${d.alc}% · ${d.kcal} kcal`;
+    return `<button class="drink-btn${d.nonAlc ? ' non-alc' : ''}" onclick="addDrink(${i})">
+      <div class="drink-icon">${d.emoji}</div>
+      <div class="drink-name">${d.name}</div>
+      <div class="drink-info">${info}</div>
+    </button>`;
+  }).join('');
+}
+
+function addDrink(i) {
+  const d = DRINKS[i];
+  const g = d.vol * (d.alc / 100) * 0.8;
+  log.push({ name: d.name, emoji: d.emoji, alc_g: g, kcal: d.kcal, time: Date.now() });
+  save(); render();
+}
+
+function removeDrink(i) { log.splice(i, 1); save(); render(); }
+
+function clearAll() {
+  if (confirm('Verlauf wirklich löschen?')) { log = []; save(); render(); }
+}
+
+function recalc() { render(); }
+
+function getPromille() {
+  const w = parseFloat(document.getElementById('weight').value) || 80;
+  const r = parseFloat(document.getElementById('gender').value) || 0.7;
+  const now = Date.now();
+  let totalG = 0;
+  log.forEach(entry => {
+    if (entry.alc_g <= 0) return;
+    const hoursAgo = (now - entry.time) / 3600000;
+    const g = Math.max(0, entry.alc_g - 0.15 * hoursAgo * w * r);
+    totalG += g;
+  });
+  return Math.max(0, totalG / (w * r));
+}
+
+function getStatus(bac) {
+  if (bac < 0.3) return { text: "Nüchtern — Gute Fahrt! 🚗", bg: "#EAF3DE", color: "#3B6D11" };
+  if (bac < 0.5) return { text: "Leicht angeheitert 😊", bg: "#FAEEDA", color: "#854F0B" };
+  if (bac < 0.8) return { text: "Angetrunken — kein Auto! ⚠️", bg: "#FAEEDA", color: "#854F0B" };
+  if (bac < 1.2) return { text: "Betrunken — Bleib wo du bist! 🚫", bg: "#FAECE7", color: "#993C1D" };
+  if (bac < 2.0) return { text: "Stark betrunken — Hilfe holen! 🆘", bg: "#FCEBEB", color: "#A32D2D" };
+  return { text: "Gefährlich! Bitte sofort Hilfe! 🚨", bg: "#FCEBEB", color: "#A32D2D" };
+}
+
+function toggleMailPanel() {
+  document.getElementById('mail-panel').classList.toggle('open');
+}
+
+function sendMail() {
+  const addr = document.getElementById('mail-addr').value.trim();
+  if (!addr) { alert('Bitte eine Email-Adresse eingeben.'); return; }
+  const bac = getPromille();
+  const st = getStatus(bac);
+  const totalAlc = log.reduce((s, e) => s + e.alc_g, 0);
+  const totalKcal = log.reduce((s, e) => s + e.kcal, 0);
+  const w = parseFloat(document.getElementById('weight').value) || 80;
+  const sobHours = bac / 0.15;
+  const sobH = Math.floor(sobHours);
+  const sobM = Math.round((sobHours - sobH) * 60);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  let verlauf = '';
+  log.forEach((e, i) => {
+    const t = new Date(e.time);
+    const ts = t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const alcInfo = e.alc_g > 0 ? `${Math.round(e.alc_g)}g Alk` : 'alkoholfrei';
+    verlauf += `  ${i + 1}. ${e.name} — ${ts} Uhr — ${alcInfo} — ${e.kcal} kcal\n`;
+  });
+  if (!verlauf) verlauf = '  (keine Getraenke eingetragen)\n';
+  const statusClean = st.text.replace(/[^\x00-\x7E]/g, '').trim();
+  const subject = encodeURIComponent(`Vatertag ${dateStr} — Koelsch-Bilanz`);
+  const body = encodeURIComponent(
+`Vatertag ${dateStr} — Koelsch-Bilanz (Stand: ${timeStr} Uhr)
+${'='.repeat(46)}
+
+PROMILLE-STATUS
+Aktueller Wert: ${bac.toFixed(2)} Promille
+Status:         ${statusClean}
+${bac > 0.05 ? `Nuechtern in:   ca. ${sobH}h ${sobM}min` : 'Nuechtern:      Ja'}
+
+ZUSAMMENFASSUNG
+Gewicht:        ${w} kg
+Getraenke:      ${log.length} Stueck
+Alkohol gesamt: ${Math.round(totalAlc)} g
+Kalorien:       ${Math.round(totalKcal)} kcal
+
+VERLAUF
+${verlauf}
+${'='.repeat(46)}
+Erstellt mit dem Vatertag Koelsch-Tracker
+`);
+  window.location.href = `mailto:${addr}?subject=${subject}&body=${body}`;
+}
+
+function render() {
+  const bac = getPromille();
+  const st = getStatus(bac);
+  const el = document.getElementById('promille-val');
+  el.textContent = bac.toFixed(2);
+  el.style.color = st.color;
+  const stEl = document.getElementById('promille-status');
+  stEl.textContent = st.text;
+  stEl.style.background = st.bg;
+  stEl.style.color = st.color;
+  const totalAlc = log.reduce((s, e) => s + e.alc_g, 0);
+  const totalKcal = log.reduce((s, e) => s + e.kcal, 0);
+  document.getElementById('stat-drinks').textContent = log.length;
+  document.getElementById('stat-alc').textContent = Math.round(totalAlc) + 'g';
+  document.getElementById('stat-kcal').textContent = Math.round(totalKcal);
+  const sobHours = bac / 0.15;
+  if (bac > 0.05) {
+    const h = Math.floor(sobHours);
+    const m = Math.round((sobHours - h) * 60);
+    document.getElementById('time-info').textContent = `Nuechtern in ca. ${h}h ${m}min (0.15 Promille/h Abbau)`;
+  } else {
+    document.getElementById('time-info').textContent = '';
+  }
+  const logEl = document.getElementById('log-section');
+  if (log.length === 0) {
+    logEl.innerHTML = '<div class="empty-log">Noch nix gedrunke — Prost! 🍻</div>';
+  } else {
+    logEl.innerHTML = [...log].reverse().map((e, ri) => {
+      const i = log.length - 1 - ri;
+      const t = new Date(e.time);
+      const ts = t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      const alcInfo = e.alc_g > 0 ? `${Math.round(e.alc_g)}g Alk · ` : 'alkoholfrei · ';
+      return `<div class="log-item">
+        <div class="log-left">
+          <span class="log-emoji">${e.emoji}</span>
+          <div>
+            <div class="log-name">${e.name}</div>
+            <div class="log-time">${ts} Uhr · ${alcInfo}${e.kcal} kcal</div>
+          </div>
+        </div>
+        <button class="log-del" onclick="removeDrink(${i})" aria-label="Entfernen"><i class="ti ti-x"></i></button>
+      </div>`;
+    }).join('');
+  }
+}
+
+buildGrid();
+render();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
